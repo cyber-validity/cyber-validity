@@ -1,1 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cyber Validity — Digital Trust Intelligence</title>
 
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:Inter,system-ui,-apple-system,sans-serif;
+background:#050b08;
+color:#ecfff2;
+min-height:100vh
+}
+header{
+padding:28px 20px 12px;
+max-width:900px;
+margin:auto
+}
+.logo{
+font-size:28px;
+font-weight:900;
+color:#55ff91;
+letter-spacing:-1px
+}
+.tag{
+color:#8fa99a;
+margin-top:5px
+}
+main{
+max-width:900px;
+margin:auto;
+padding:18px 20px 50px
+}
+.card{
+background:#0a1510;
+border:1px solid #1c3928;
+border-radius:20px;
+padding:20px;
+margin-bottom:18px;
+box-shadow:0 10px 30px rgba(0,0,0,.2)
+}
+label{
+display:block;
+font-size:13px;
+font-weight:700;
+color:#a9c4b2;
+margin-top:14px
+}
+select,input,textarea{
+width:100%;
+margin-top:8px;
+padding:14px;
+border-radius:12px;
+border:1px solid #284735;
+background:#07100b;
+color:#fff;
+font:inherit;
+outline:none
+}
+textarea{
+min-height:170px;
+resize:vertical
+}
+select:focus,input:focus,textarea:focus{
+border-color:#55ff91
+}
+button{
+width:100%;
+margin-top:16px;
+padding:15px;
+border:0;
+border-radius:13px;
+background:#55ff91;
+color:#031008;
+font-weight:900;
+font-size:15px;
+cursor:pointer
+}
+button:hover{filter:brightness(1.08)}
+button:disabled{opacity:.5}
+.hidden{display:none}
+.loading{
+text-align:center;
+padding:25px;
+color:#9fb6a7
+}
+.risk{
+font-size:25px;
+font-weight:900;
+margin-bottom:10px
+}
+.low{color:#55ff91}
+.medium{color:#ffd166}
+.high{color:#ff756d}
+.unknown{color:#b7c2bb}
+h2,h3{margin-top:0}
+h3{
+font-size:15px;
+color:#55ff91;
+margin-bottom:8px
+}
+ul{
+padding-left:20px;
+line-height:1.6
+}
+.meta{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+margin:12px 0
+}
+.badge{
+padding:6px 10px;
+border-radius:99px;
+background:#102319;
+border:1px solid #234832;
+font-size:12px;
+color:#b8d3c0
+}
+.item{
+padding:12px;
+margin:8px 0;
+border-radius:11px;
+background:#07100b;
+border:1px solid #183222
+}
+.disclaimer{
+font-size:12px;
+color:#718579;
+line-height:1.5
+}
+footer{
+text-align:center;
+color:#52675a;
+font-size:12px;
+padding:10px
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">🛡️ Cyber Validity</div>
+<div class="tag">Investigate before you trust.</div>
+</header>
+
+<main>
+
+<div class="card">
+
+<h2>🔎 Start an investigation</h2>
+
+<label>Investigation type</label>
+
+<select id="type">
+<option value="Website">🌐 Website</option>
+<option value="Message">💬 Message</option>
+<option value="Email">✉️ Email</option>
+<option value="Job offer">💼 Job offer</option>
+<option value="Seller">🛒 Seller</option>
+<option value="Payment request">💳 Payment request</option>
+</select>
+
+<label>What do you want Cyber Validity to investigate?</label>
+
+<textarea id="input"
+placeholder="Paste a website, message, email, job offer, seller information or payment request here..."></textarea>
+
+<label>Additional context (optional)</label>
+
+<input id="context"
+placeholder="Example: Someone contacted me on WhatsApp claiming to work for this company.">
+
+<button id="investigateBtn" onclick="investigate()">
+🔎 Investigate
+</button>
+
+</div>
+
+<div id="result"></div>
+
+</main>
+
+<footer>
+Cyber Validity provides risk analysis, not proof of fraud or legitimacy.
+</footer>
+
+<script>
+
+const patterns={
+
+urgency:[
+/urgent/i,
+/immediately/i,
+/act now/i,
+/within \d+ (minutes?|hours?)/i,
+/last chance/i,
+/expires today/i,
+/final notice/i
+],
+
+credentials:[
+/password/i,
+/passcode/i,
+/login code/i,
+/verification code/i,
+/otp/i,
+/one[- ]time password/i,
+/security code/i
+],
+
+financial:[
+/cvv/i,
+/card number/i,
+/bank details/i,
+/bank account/i,
+/pin\b/i,
+/send money/i,
+/pay now/i,
+/make payment/i,
+/transfer money/i,
+/deposit/i
+],
+
+crypto:[
+/bitcoin/i,
+/crypto/i,
+/usdt/i,
+/ethereum/i,
+/wallet address/i
+],
+
+fees:[
+/registration fee/i,
+/application fee/i,
+/training fee/i,
+/activation fee/i,
+/processing fee/i,
+/upfront fee/i,
+/pay.*fee/i
+],
+
+gift:[
+/gift card/i,
+/voucher/i,
+/itunes/i,
+/google play/i
+],
+
+messaging:[
+/telegram/i,
+/whatsapp/i,
+/signal app/i
+],
+
+tooGood:[
+/guaranteed/i,
+/guarantee.*profit/i,
+/risk[- ]free/i,
+/easy money/i,
+/too good to be true/i,
+/double your money/i
+],
+
+job:[
+/pay.*registration/i,
+/pay.*training/i,
+/job.*fee/i,
+/employment.*fee/i,
+/guaranteed.*job/i,
+/hiring.*fee/i
+],
+
+seller:[
+/friends and family/i,
+/off platform/i,
+/outside the platform/i,
+/wire transfer/i,
+/western union/i,
+/moneygram/i
+]
+
+};
+
+function findSignals(text){
+
+let found=[];
+
+for(const category in patterns){
+
+for(const pattern of patterns[category]){
+
+if(pattern.test(text)){
+
+found.push({
+category,
+text:pattern.source
+});
+
+}
+
+}
+
+}
+
+return found;
+
+}
+
+function websiteSignals(text){
+
+let found=[];
+
+try{
+
+const url=new URL(text);
+
+if(url.protocol!=="https:"){
+found.push({
+category:"website",
+text:"Website does not use HTTPS."
+});
+}
+
+if(/^https?:\/\/\d{1,3}(\.\d{1,3}){3}/i.test(text)){
+found.push({
+category:"website",
+text:"URL uses a raw IP address."
+});
+}
+
+if(text.includes("xn--")){
+found.push({
+category:"website",
+text:"Domain contains Punycode."
+});
+}
+
+if(/(\.xyz|\.top|\.click|\.vip|\.shop)$/i.test(url.hostname)){
+found.push({
+category:"website",
+text:"Domain uses a higher-risk or commonly abused TLD."
+});
+}
+
+if(text.length>180){
+found.push({
+category:"website",
+text:"URL is unusually long."
+});
+}
+
+}catch{
+
+found.push({
+category:"website",
+text:"The supplied value is not a valid URL."
+});
+
+}
+
+return found;
+
+}
+
+function buildAssessment(type,text,signals){
+
+let score=0;
+
+score+=signals.length*9;
+
+if(signals.some(x=>x.category==="credentials"))score+=18;
+if(signals.some(x=>x.category==="financial"))score+=18;
+if(signals.some(x=>x.category==="fees"))score+=15;
+if(signals.some(x=>x.category==="urgency"))score+=10;
+if(signals.some(x=>x.category==="job"))score+=12;
+if(signals.some(x=>x.category==="seller"))score+=10;
+if(signals.some(x=>x.category==="website"))score+=5;
+
+score=Math.min(100,score);
+
+let risk;
+
+if(signals.length===0){
+risk="UNDETERMINED";
+}else if(score>=65){
+risk="HIGH CONCERN";
+}else if(score>=40){
+risk="ELEVATED CONCERN";
+}else if(score>=20){
+risk="CAUTION";
+}else{
+risk="LOW CONCERN";
+}
+
+return {score,risk};
+
+}
+
+function escapeHTML(value){
+
+return String(value||"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+function riskClass(risk){
+
+if(risk==="HIGH CONCERN")return"high";
+if(risk==="ELEVATED CONCERN")return"medium";
+if(risk==="CAUTION")return"medium";
+if(risk==="LOW CONCERN")return"low";
+return"unknown";
+
+}
+
+async function investigate(){
+
+const type=document.getElementById("type").value;
+const text=document.getElementById("input").value.trim();
+const context=document.getElementById("context").value.trim();
+const button=document.getElementById("investigateBtn");
+const result=document.getElementById("result");
+
+if(!text){
+
+alert("Paste something for Cyber Validity to investigate.");
+
+return;
+
+}
+
+button.disabled=true;
+
+result.innerHTML=`
+<div class="card loading">
+🧠 Cyber Validity is analyzing the submission...
+</div>
+`;
+
+await new Promise(resolve=>setTimeout(resolve,700));
+
+let signals=findSignals(text);
+
+if(type==="Website"){
+signals=signals.concat(websiteSignals(text));
+}
+
+if(type==="Job offer"){
+signals=signals.concat(
+findSignals(text).filter(x=>
+["fees","financial","urgency","job"].includes(x.category)
+)
+);
+}
+
+if(type==="Seller"){
+signals=signals.concat(
+findSignals(text).filter(x=>
+["financial","seller","urgency"].includes(x.category)
+)
+);
+}
+
+if(type==="Payment request"){
+signals=signals.concat(
+findSignals(text).filter(x=>
+["financial","urgency","crypto","gift"].includes(x.category)
+)
+);
+}
+
+const assessment=buildAssessment(type,text,signals);
+
+const uniqueSignals=[
+...new Map(signals.map(x=>[x.text,x])).values()
+];
+
+let evidence=[];
+
+if(type==="Website"){
+evidence.push("Website submission was examined for basic URL characteristics.");
+}
+
+if(uniqueSignals.length){
+uniqueSignals.forEach(x=>{
+evidence.push(
+"Detected indicator: "+x.text.replace(/\\b/g,"")
+);
+});
+}else{
+evidence.push("No strong local heuristic indicators were detected.");
+}
+
+let unknowns=[
+"Cyber Validity has not independently verified the identity of every person or organization mentioned.",
+"No external intelligence sources were queried by this offline prototype.",
+"A clean result does not prove that something is legitimate."
+];
+
+let action;
+
+if(assessment.risk==="HIGH CONCERN"){
+action="Do not send money, passwords, OTPs or banking information until the claims have been independently verified.";
+}else if(assessment.risk==="ELEVATED CONCERN"){
+action="Pause before acting. Independently contact the claimed organization using an official channel.";
+}else if(assessment.risk==="CAUTION"){
+action="Verify the important claims independently before proceeding.";
+}else{
+action="No major indicators were detected by this prototype, but independently verify important claims.";
+}
+
+result.innerHTML=`
+
+<div class="card">
+
+<div class="risk ${riskClass(assessment.risk)}">
+${escapeHTML(assessment.risk)}
+</div>
+
+<div class="meta">
+<span class="badge">${escapeHTML(type)}</span>
+<span class="badge">Risk score: ${assessment.score}/100</span>
+<span class="badge">Prototype analysis</span>
+</div>
+
+<h3>🧠 Assessment</h3>
+
+<p>
+Cyber Validity detected
+<strong>${uniqueSignals.length}</strong>
+potential indicator(s) in the submitted information.
+This is a risk assessment, not proof of fraud.
+</p>
+
+<h3>🔎 Evidence / signals</h3>
+
+${evidence.map(x=>`
+<div class="item">${escapeHTML(x)}</div>
+`).join("")}
+
+<h3>❓ Unknowns</h3>
+
+${unknowns.map(x=>`
+<div class="item">${escapeHTML(x)}</div>
+`).join("")}
+
+<h3>🛡️ Recommended action</h3>
+
+<div class="item">
+${escapeHTML(action)}
+</div>
+
+<h3>🤖 AI Investigation Layer</h3>
+
+<div class="item">
+
+This version is structured to connect to the Cyber Validity AI backend.
+
+The next backend layer will allow the AI to:
+
+• extract entities<br>
+• investigate relevant evidence<br>
+• compare claims<br>
+• identify contradictions<br>
+• build relationships between entities<br>
+• explain findings<br>
+• generate deeper investigation reports
+
+</div>
+
+<p class="disclaimer">
+This prototype currently performs local analysis only.
+It does not crawl the internet and cannot independently confirm
+whether a person, company, website or transaction is legitimate.
+</p>
+
+</div>
+
+`;
+
+button.disabled=false;
+
+}
+
+</script>
+
+</body>
+                              </html>
